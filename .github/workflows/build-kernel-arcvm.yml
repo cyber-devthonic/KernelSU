@@ -129,6 +129,27 @@ jobs:
           scripts/config --enable CONFIG_KSU_SUSFS_HAS_MAGIC_MOUNT
           scripts/config --enable CONFIG_KSU_SUSFS_SUS_OVERLAYFS
           echo "[+] suSFS configurations enabled"
+      - name: Apply suSFS patches
+        run: |
+          echo "[+] Applying suSFS patches..."
+          cd ${{ github.workspace }}/kernel
+          patch -p1 < ../susfs_files/50_add_susfs_in_gki-android12-5.10.patch || echo "[-] suSFS main patch failed - manual merge needed"
+          cd ../KernelSU/kernel
+          patch -p1 < ../../susfs_files/10_enable_susfs_for_ksu.patch || echo "[-] suSFS KSU patch failed - manual merge needed"
+          # Copy files
+          cp ../../susfs_files/susfs.c ${{ github.workspace }}/kernel/fs/
+          cp ../../susfs_files/susfs.h ${{ github.workspace }}/kernel/include/linux/
+      - name: Enable suSFS config
+        run: |
+          cd ${{ github.workspace }}/kernel
+          scripts/config --enable CONFIG_KSU
+          scripts/config --enable CONFIG_KSU_SUSFS
+          # Enable disabled-by-default suSFS features
+          scripts/config --enable CONFIG_SUSFS_HIDE
+          scripts/config --enable CONFIG_SUSFS_PERF
+          scripts/config --enable CONFIG_KSU_SUSFS_SUS_PATH
+          scripts/config --enable CONFIG_KSU_SUSFS_HAS_MAGIC_MOUNT
+          scripts/config --enable CONFIG_KSU_SUSFS_SUS_OVERLAYFS
       - name: Build Kernel
         working-directory: kernel
         env:
